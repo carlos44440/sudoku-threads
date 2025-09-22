@@ -1,9 +1,9 @@
-use crate::board::Board;
-
 mod solver;
 mod metrics;
 mod board;
 mod parallel;
+
+use crate::board::Board;
 
 fn main() {
     env_logger::init();
@@ -20,35 +20,47 @@ fn main() {
     let path = &args[1];
 
 
-    match Board::from_file(path) {
-        Ok(mut board) => {
+    let mut board: Board = match Board::from_file(path) {
+        Ok(mut b) => {
             println!("Tablero cargado:");
-            board.print();
+            b.print();
 
 
             println!("Aplicando propagación de restricciones (REDUCE)...");
-            if !board.reduce_constraints() {
+            if !b.reduce_constraints() {
                 println!("Inconsistencia detectada durante la propagación de restricciones.");
                 return;
             }
 
 
             println!("Tablero después de REDUCE:");
-            board.print();
+            b.print();
 
 
             println!("Intentando resolver con backtracking (secuencial)... Esto puede tardar en 16x16 difíciles");
             let start = std::time::Instant::now();
-            if solver::solve(&mut board) {
+            if solver::solve(&mut b) {
                 let dt = start.elapsed();
                 println!("Solución encontrada en: {:?}", dt);
-                board.print();
+                b.print();
             } else {
                 println!("No se encontró solución (o es demasiado costoso).");
             }
+            b
         }
         Err(e) => {
             println!("Error cargando tablero: {}", e);
+            return;
         }
+    };
+
+    println!("Intentando resolver en paralelo con Rayon...");
+    let start = std::time::Instant::now();
+    if let Some(solution) = parallel::solve_parallel(&board) {
+        let dt = start.elapsed();
+        println!("Solución encontrada en paralelo en: {:?}", dt);
+        solution.print();
+    } else {
+        println!("No se encontró solución en paralelo.");
     }
 }
