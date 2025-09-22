@@ -69,12 +69,13 @@ impl Board {
             println!();
             // Imprimir separador de bloque de fila
             if (r + 1) % BLOCK == 0 && r + 1 != SIZE {
-                for _ in 0..(SIZE + BLOCK - 2) { print!("-"); }
+                for _ in 0..(SIZE + BLOCK - 1) { print!("--"); }
                 println!();
             }
         }
     }
 
+    /*
     /// Comprueba si es válido colocar `val` (1..=SIZE) en (row,col).
     pub fn is_valid(&self, row: usize, col: usize, val: u8) -> bool {
         // Comprueba si el valor ya existe en la fila
@@ -95,6 +96,7 @@ impl Board {
         }
         true
     }
+    */
 
     /// Devuelve la primera celda vacía (row,col) o None si está completo
     pub fn find_empty(&self) -> Option<(usize, usize)> {

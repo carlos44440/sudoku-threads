@@ -3,25 +3,19 @@ mod metrics;
 mod board;
 mod parallel;
 
-use num_cpus;
 use crate::board::Board;
+use num_cpus;
 
 fn main() {
     env_logger::init();
 
-    let args: Vec<String> = std::env::args().collect();
-    if args.len() < 2 {
-        println!("Uso: cargo run --release -- <path_to_16x16_board.txt>");
-        println!("Formato: 16 filas, cada fila 16 valores separados por espacios o sin espacios. Use 0 o . para vacío, 1-9 y A-G para 10-16.");
-        return;
-    }
+    let path = "./src/grid16x16.txt";
 
-    let path = &args[1];
+    // Variables para guardar tablero y tiempo secuencial
+    let board: Board;
+    let t_seq;
 
-    // Declarar variables fuera para que sean accesibles después
-    let mut board: Board;
-    let mut t_seq = std::time::Duration::ZERO;
-
+    // Cargar tablero
     match Board::from_file(path) {
         Ok(mut b) => {
             println!("Tablero cargado:");
@@ -36,16 +30,17 @@ fn main() {
             println!("Tablero después de REDUCE:");
             b.print();
 
-            println!("Intentando resolver con backtracking (secuencial)...");
+            // Resolver secuencialmente
+            println!("Resolviendo con backtracking secuencial...");
             let (res, t) = metrics::measure_time(|| solver::solve(&mut b));
-            t_seq = t; // guardar tiempo secuencial
+            t_seq = t;
             if res {
-                println!("Solución encontrada secuencialmente en: {:?}", t_seq);
+                println!("Solución secuencial encontrada en: {:?}", t_seq);
                 b.print();
             } else {
                 println!("No se encontró solución secuencialmente.");
             }
-            board = b; // guardar tablero para paralelización
+            board = b;
         }
         Err(e) => {
             println!("Error cargando tablero: {}", e);
@@ -53,19 +48,33 @@ fn main() {
         }
     };
 
-    println!("Intentando resolver en paralelo con Rayon...");
+    // Número máximo de cores disponibles
     let num_cores = num_cpus::get();
+    println!("\nNúmero de cores disponibles: {}", num_cores);
+    println!("Probando paralelización variando el número de hilos (1..=num_cores)\n");
 
-    let (solution, t_par) = metrics::measure_time(|| parallel::solve_parallel(&board));
+    // Iterar sobre k = 1..=num_cores
+    for k in 1..=num_cores {
+        let (solution, t_par) = metrics::measure_parallel_with_threads(
+            || parallel::solve_parallel(&board, k),
+            k,
+        );
 
-    if let Some(sol) = solution {
-        println!("Solución encontrada en paralelo en: {:?}", t_par);
-        sol.print();
+        if let Some(sol) = solution {
+            let speedup = metrics::parallel_speedup(t_seq, t_par);
+            let efficiency = metrics::parallel_efficiency(t_seq, t_par, k);
 
-        // Calcular eficiencia usando t_seq
-        let eff = metrics::parallel_efficiency(t_seq, t_par, num_cores);
-        println!("Eficiencia paralela: {:.2}%", eff * 100.0);
-    } else {
-        println!("No se encontró solución en paralelo.");
+            println!("=== {} hilos ===", k);
+            println!("Tiempo paralelo: {:?}", t_par);
+            println!("Speedup: {:.2}", speedup);
+            println!("Eficiencia: {:.2}%", efficiency * 100.0);
+            // Puedes imprimir la solución solo para k = num_cores si quieres
+            if k == num_cores {
+                println!("Solución final:");
+                sol.print();
+            }
+        } else {
+            println!("No se encontró solución usando {} hilos.", k);
+        }
     }
 }
