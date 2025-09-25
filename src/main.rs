@@ -12,7 +12,7 @@ fn main() {
     let path = "./src/grid16x16.txt";
 
     // Variables para guardar tablero y tiempo secuencial
-    let board: Board;
+    let board_initial = Board::from_file(path).expect("Error cargando tablero");
     let t_seq;
 
     // Cargar tablero
@@ -40,7 +40,6 @@ fn main() {
             } else {
                 println!("No se encontró solución secuencialmente.");
             }
-            board = b;
         }
         Err(e) => {
             println!("Error cargando tablero: {}", e);
@@ -56,7 +55,7 @@ fn main() {
     // Iterar sobre k = 1..=num_cores
     for k in 1..=num_cores {
         let (solution, t_par) = metrics::measure_parallel_with_threads(
-            || parallel::solve_parallel(&board, k),
+            || parallel::solve_parallel(&board_initial, k),
             k,
         );
 
@@ -65,7 +64,7 @@ fn main() {
             let efficiency = metrics::parallel_efficiency(t_seq, t_par, k);
 
             println!("=== {} hilos ===", k);
-            println!("Tiempo paralelo: {:?}", t_par);
+            println!("Tiempo paralelo promedio: {:?}", t_par);
             println!("Speedup: {:.2}", speedup);
             println!("Eficiencia: {:.2}%", efficiency * 100.0);
             // Puedes imprimir la solución solo para k = num_cores si quieres

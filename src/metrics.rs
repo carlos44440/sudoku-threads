@@ -22,7 +22,7 @@ pub fn parallel_efficiency(t_seq: Duration, t_par: Duration, num_cores: usize) -
         return 0.0;
     }
     let efficiency = t_seq_s / (t_par_s * num_cores as f64);
-    efficiency.min(1.0) // máximo 1.0
+    efficiency.min(1.0)
 }
 
 /// Calcula el speedup de paralelización
@@ -30,7 +30,7 @@ pub fn parallel_efficiency(t_seq: Duration, t_par: Duration, num_cores: usize) -
 /// `t_par`: tiempo de ejecución paralelo
 pub fn parallel_speedup(t_seq: Duration, t_par: Duration) -> f64 {
     let t_seq_s = t_seq.as_secs_f64();
-    let t_par_s = t_par.as_secs_f64();
+    let t_par_s = t_par.as_secs_f64().max(1e-6);
     if t_par_s == 0.0 {
         return 0.0;
     }
@@ -54,5 +54,9 @@ where
         .build()
         .expect("No se pudo crear el thread pool");
 
-    pool.install(|| measure_time(f))
+    let start = std::time::Instant::now();
+    let result = pool.install(f);  // Ejecuta el trabajo completo en el pool
+    let duration = start.elapsed();
+
+    (result, duration)
 }

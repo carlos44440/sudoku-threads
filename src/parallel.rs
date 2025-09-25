@@ -31,6 +31,9 @@ pub fn solve_parallel(board: &Board, num_threads: usize) -> Option<Board> {
         candidates.into_par_iter().find_map_any(|val| {
             let mut next = (*board).clone();
             next.grid[r][c] = val;
+            if !next.reduce_constraints() {  // aplicar propagación antes de backtracking
+                return None;
+            }
             if solver::solve(&mut next) {
                 Some(next)
             } else {
@@ -39,31 +42,3 @@ pub fn solve_parallel(board: &Board, num_threads: usize) -> Option<Board> {
         })
     })
 }
-
-/*
-/// Selecciona la celda vacía con menos candidatos (heurística MRV).
-pub fn first_choice(board: &Board) -> Option<(usize, usize, u16)> {
-    let mut best: Option<(usize, usize, u16)> = None;
-    let mut best_count = (SIZE + 1) as u32;
-
-    for r in 0..SIZE {
-        for c in 0..SIZE {
-            if board.grid[r][c] == 0 {
-                let mask = board.candidates_mask(r, c);
-                let cnt = mask.count_ones();
-                if cnt == 0 {
-                    return None; // inconsistencia
-                }
-                if cnt < best_count {
-                    best_count = cnt;
-                    best = Some((r, c, mask));
-                    if cnt == 1 {
-                        return best; // mejor caso
-                    }
-                }
-            }
-        }
-    }
-    best
-}
-*/

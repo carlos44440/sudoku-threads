@@ -75,29 +75,6 @@ impl Board {
         }
     }
 
-    /*
-    /// Comprueba si es válido colocar `val` (1..=SIZE) en (row,col).
-    pub fn is_valid(&self, row: usize, col: usize, val: u8) -> bool {
-        // Comprueba si el valor ya existe en la fila
-        for c in 0..SIZE {
-            if self.grid[row][c] == val { return false; }
-        }
-        // Comprueba si el valor ya existe en la columna
-        for r in 0..SIZE {
-            if self.grid[r][col] == val { return false; }
-        }
-        // Comprueba si el valor ya existe en el bloque
-        let br = (row / BLOCK) * BLOCK; // Define el parte superior del bloque
-        let bc = (col / BLOCK) * BLOCK; // Define el parte izquierda del bloque
-        for r in br..br+BLOCK {
-            for c in bc..bc+BLOCK {
-                if self.grid[r][c] == val { return false; }
-            }
-        }
-        true
-    }
-    */
-
     /// Devuelve la primera celda vacía (row,col) o None si está completo
     pub fn find_empty(&self) -> Option<(usize, usize)> {
         for r in 0..SIZE {
